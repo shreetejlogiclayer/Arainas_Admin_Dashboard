@@ -36,7 +36,6 @@ export default function LoginPage({ onLogin, error }) {
           <div className="login-intro">
             <span className="eyebrow"><span className="login-lock"><LockKeyhole size={13} /></span> SECURE ADMIN ACCESS</span>
             <h1 id="login-title">Welcome back</h1>
-            <p>Sign in to manage your members, orders, and operations.</p>
           </div>
           {error && !errorDismissed && <div className="login-error" role="alert"><span className="login-error-mark">!</span><span>{error}</span></div>}
           <form onSubmit={submit} className="login-form">

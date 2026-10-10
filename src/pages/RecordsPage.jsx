@@ -10,7 +10,6 @@ export default function RecordsPage({ type, result, onPage, onFilter, onOpen, ne
   return (
     <>
       <div className="page-intro list-intro">
-        <p className="page-description">{isOrders ? "Review and manage incoming customer orders." : "View and search registered portal members."}</p>
         <span className="record-count">{result?.total ?? 0} {type}</span>
       </div>
       <div className="filter-bar">
@@ -22,7 +21,6 @@ export default function RecordsPage({ type, result, onPage, onFilter, onOpen, ne
           <label className="date-filter"><span>To</span><input aria-label="Orders to date" type="date" onChange={(event) => onFilter("to", event.target.value)} /></label>
         </>}
       </div>
-      {isOrders && <p className="table-caption">New orders are pending orders. Use the status filter to review recent activity.</p>}
       <RecordsTable items={result?.items || []} type={type} onOpen={onOpen} newOrderIds={newOrderIds} dismissed={dismissed} />
       <Pagination result={result} onPage={onPage} />
     </>

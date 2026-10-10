@@ -9,7 +9,6 @@ export default function RecordsTable({ items = [], type, newOrderIds = new Set()
       <div className="empty-state inline-empty">
         <span className="empty-icon"><PackageOpen size={21} /></span>
         <strong>No {type === "orders" ? "orders" : "members"} to show</strong>
-        <p>Records will appear here when available.</p>
       </div>
     );
   }

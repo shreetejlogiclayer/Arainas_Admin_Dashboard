@@ -4,7 +4,7 @@ An isolated React admin console for the existing ARAINA portal. The frontend fol
 
 ## Project structure
 
-- `src/pages` contains login, overview, member/order list, and detail screens.
+- `src/pages` contains login, overview, member/order list, customer order summaries, and detail screens.
 - `src/components` contains the shared admin shell, tables, status, pagination, and feedback UI.
 - `src/lib/api.js` contains the API client and shared display formatters.
 - `server.mjs` serves the production Vite build and proxies `/api/admin` requests.
@@ -38,5 +38,7 @@ npm start
 ```
 
 Open <http://localhost:4173>. The dashboard proxy targets `http://localhost:5001` by default. For a different backend URL, set `ADMIN_API_URL` for the Vite or dashboard server process. The dashboard refreshes overview and order data every 20 seconds. Sign in with `admin@arainas.com` and the password entered in the provisioning command. For email-only accounts, the required database mobile field is populated with a generated internal identifier; it is not used as a login. It does not add or migrate database tables. Order totals are displayed as recorded order amounts; payment status is distinct and is not treated as paid revenue.
+
+The **Customer orders** section summarizes each customer’s order count and most recent order date. Search by customer name or mobile number and filter orders by an inclusive date range. Excel downloads include all matching customers, not just the visible page.
 
 Each order has an **Open parcel PDF** action in the orders table and order detail. It opens a 4 × 6 inch parcel summary in a new browser tab using the sender details from the Arainas company configuration and the recipient, buyer, address, and item snapshots saved with that order.

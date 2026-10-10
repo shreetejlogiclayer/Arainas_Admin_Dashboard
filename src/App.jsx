@@ -7,6 +7,7 @@ import DetailPage from "./pages/DetailPage";
 import LoginPage from "./pages/LoginPage";
 import OverviewPage from "./pages/OverviewPage";
 import RecordsPage from "./pages/RecordsPage";
+import CustomerOrdersPage from "./pages/CustomerOrdersPage";
 
 function AdminRoutes({ onLogout, newOrderIds, dismissed, notification, onDismiss, error, onRetry }) {
   const [overview, setOverview] = useState(null);
@@ -23,11 +24,12 @@ function AdminRoutes({ onLogout, newOrderIds, dismissed, notification, onDismiss
   const isOverview = location.pathname === "/overview";
   const isMembers = location.pathname === "/members";
   const isOrders = location.pathname === "/orders";
-  const pageType = isMembers ? "members" : "orders";
+  const isCustomerOrders = location.pathname === "/customer-orders";
+  const pageType = isMembers ? "members" : isCustomerOrders ? "customer-orders" : "orders";
   const recordId = (isMemberDetail || isOrderDetail) ? decodeURIComponent(location.pathname.split("/").at(-1)) : "";
 
   const load = useCallback(async () => {
-    if (!isOverview && !isMembers && !isOrders && !isMemberDetail && !isOrderDetail) return;
+    if (!isOverview && !isMembers && !isOrders && !isCustomerOrders && !isMemberDetail && !isOrderDetail) return;
     setLoading(true);
     try {
       if (isOverview) {
@@ -37,12 +39,12 @@ function AdminRoutes({ onLogout, newOrderIds, dismissed, notification, onDismiss
         ]);
         setOverview(summary);
         setOverviewOrders(recent);
-      } else if (isMembers || isOrders) {
+      } else if (isMembers || isOrders || isCustomerOrders) {
         const query = new URLSearchParams({
           page: String(filters.page),
           limit: "10",
           search: filters.search,
-          ...(isOrders ? { status: filters.status, paymentStatus: filters.payment, from: filters.from, to: filters.to } : {}),
+          ...(isOrders || isCustomerOrders ? { from: filters.from, to: filters.to } : {}),
         });
         setResult(await api(`/${pageType}?${query}`));
       } else {
@@ -55,12 +57,12 @@ function AdminRoutes({ onLogout, newOrderIds, dismissed, notification, onDismiss
     } finally {
       setLoading(false);
     }
-  }, [filters, isMemberDetail, isMembers, isOrderDetail, isOrders, isOverview, pageType, recordId, onRetry]);
+  }, [filters, isCustomerOrders, isMemberDetail, isMembers, isOrderDetail, isOrders, isOverview, pageType, recordId, onRetry]);
 
   useEffect(() => {
-    if (isMembers || isOrders) setFilters({ page: 1, search: "", status: "", payment: "", from: "", to: "" });
+    if (isMembers || isOrders || isCustomerOrders) setFilters({ page: 1, search: "", status: "", payment: "", from: "", to: "" });
     if (isMemberDetail || isOrderDetail) setRecord(null);
-  }, [location.pathname, isMemberDetail, isMembers, isOrderDetail, isOrders]);
+  }, [location.pathname, isCustomerOrders, isMemberDetail, isMembers, isOrderDetail, isOrders]);
 
   useEffect(() => {
     load();
@@ -81,6 +83,11 @@ function AdminRoutes({ onLogout, newOrderIds, dismissed, notification, onDismiss
     setFilters((current) => ({ ...current, [key]: value, page: 1 }));
   }
 
+  function resetCustomerOrderFilters() {
+    clearTimeout(searchTimer.current);
+    setFilters((current) => ({ ...current, page: 1, search: "", from: "", to: "" }));
+  }
+
   return (
     <AdminShell newOrders={newOrderIds.size} notification={notification} onDismiss={onDismiss} onLogout={onLogout} error={error} onRetry={load}>
       <Routes>
@@ -88,6 +95,7 @@ function AdminRoutes({ onLogout, newOrderIds, dismissed, notification, onDismiss
         <Route path="/overview" element={loading && !overview ? <Loading /> : <OverviewPage overview={overview} orders={overviewOrders} onRefresh={load} onOpenOrder={(id) => navigate(`/orders/${encodeURIComponent(id)}`)} newOrderIds={newOrderIds} dismissed={dismissed} />} />
         <Route path="/members" element={loading && !result ? <Loading /> : <RecordsPage type="members" result={result} onPage={(page) => setFilters((current) => ({ ...current, page }))} onFilter={changeFilter} onOpen={(id) => navigate(`/members/${encodeURIComponent(id)}`)} />} />
         <Route path="/orders" element={loading && !result ? <Loading /> : <RecordsPage type="orders" result={result} onPage={(page) => setFilters((current) => ({ ...current, page }))} onFilter={changeFilter} onOpen={(id) => navigate(`/orders/${encodeURIComponent(id)}`)} newOrderIds={newOrderIds} dismissed={dismissed} />} />
+        <Route path="/customer-orders" element={loading && !result ? <Loading /> : <CustomerOrdersPage result={result} filters={filters} onPage={(page) => setFilters((current) => ({ ...current, page }))} onFilter={changeFilter} onReset={resetCustomerOrderFilters} onError={onRetry} />} />
         <Route path="/members/:id" element={<DetailPage type="member" record={record} loading={loading} error={error} onOpenOrder={(id) => navigate(`/orders/${encodeURIComponent(id)}`)} />} />
         <Route path="/orders/:id" element={<DetailPage type="order" record={record} loading={loading} error={error} />} />
         <Route path="*" element={<Navigate to="/overview" replace />} />

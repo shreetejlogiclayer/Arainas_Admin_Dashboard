@@ -1,5 +1,5 @@
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
-import { Bell, LayoutDashboard, LogOut, Menu, Package, Users, X } from "lucide-react";
+import { Bell, LayoutDashboard, LogOut, Menu, Package, Users, UserRoundSearch, X } from "lucide-react";
 import { useState } from "react";
 import { ErrorBanner } from "./Feedback";
 
@@ -7,6 +7,7 @@ const navigation = [
   { to: "/overview", label: "Overview", icon: LayoutDashboard },
   { to: "/members", label: "Members", icon: Users },
   { to: "/orders", label: "Orders", icon: Package },
+  { to: "/customer-orders", label: "Customer orders", icon: UserRoundSearch },
 ];
 
 export default function AdminShell({ children, newOrders = 0, notification, onDismiss, onLogout, error, onRetry }) {
