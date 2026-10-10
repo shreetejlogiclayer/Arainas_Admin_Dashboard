@@ -1,4 +1,4 @@
-import { ArrowLeft, MapPin, PackageCheck, UserRound } from "lucide-react";
+import { ArrowLeft, MapPin, PackageCheck, Pencil, Trash2, UserRound } from "lucide-react";
 import { Link } from "react-router-dom";
 import RecordsTable from "../components/RecordsTable";
 import OrderPdfButton from "../components/OrderPdfButton";
@@ -15,7 +15,7 @@ function Address({ address }) {
   return <p className="address-text">{[address.houseNumber, address.building, address.street, address.area, address.landmark, address.village, address.city, address.district, address.state, address.pinCode, address.country].filter(Boolean).join(", ")}</p>;
 }
 
-export default function DetailPage({ type, record, loading, error, onOpenOrder }) {
+export default function DetailPage({ type, record, loading, error, onOpenOrder, onDeleteMember, onEditMember }) {
   const isMember = type === "member";
   const back = isMember ? "/members" : "/orders";
   if (loading) return <Loading label={`Loading ${type}…`} />;
@@ -26,7 +26,7 @@ export default function DetailPage({ type, record, loading, error, onOpenOrder }
     return (
       <>
         <Link to={back} className="back-link"><ArrowLeft size={16} /> Back to members</Link>
-        <div className="detail-heading"><div><span className="eyebrow">MEMBER PROFILE</span><h2>{member.profile?.fullName || "Name not added"}</h2><p>{member.mobile} {member.email && `· ${member.email}`}</p></div><StatusBadge value={member.status} /></div>
+        <div className="detail-heading"><div><span className="eyebrow">MEMBER PROFILE</span><h2>{member.profile?.fullName || "Name not added"}</h2><p>{member.mobile} {member.email && `· ${member.email}`}</p></div><div className="member-detail-actions"><StatusBadge value={member.status} />{onEditMember && <button className="button button-secondary" onClick={() => onEditMember(member)}><Pencil size={15} /> Edit member</button>}{onDeleteMember && <button className="button button-danger" onClick={() => onDeleteMember(member)}><Trash2 size={15} /> Delete member</button>}</div></div>
         <div className="detail-grid">
           <section className="detail-card"><div className="detail-card-title"><UserRound size={17} /><span>Account</span></div><dl><Field label="Registered">{formatDate(member.createdAt, true)}</Field><Field label="Account status"><StatusBadge value={member.status} /></Field><Field label="Email">{member.email}</Field><Field label="Mobile">{member.mobile}</Field></dl></section>
           <section className="detail-card"><div className="detail-card-title"><UserRound size={17} /><span>Portal profile</span></div><dl><Field label="Profile name">{member.profile?.fullName}</Field><Field label="Alternate mobile">{member.profile?.alternateMobile}</Field><Field label="Referral code">{member.profile?.referralCode}</Field></dl></section>

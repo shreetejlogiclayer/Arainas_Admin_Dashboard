@@ -1,5 +1,5 @@
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
-import { Bell, LayoutDashboard, LogOut, Menu, Package, Users, UserRoundSearch, X } from "lucide-react";
+import { Bell, LayoutDashboard, LogOut, Menu, Package, Settings, Users, UserRoundSearch, X } from "lucide-react";
 import { useState } from "react";
 import { ErrorBanner } from "./Feedback";
 
@@ -11,10 +11,13 @@ const navigation = [
 ];
 
 export default function AdminShell({ children, user, newOrders = 0, notification, onDismiss, onLogout, error, onRetry }) {
+  const visibleNavigation = user?.role === "admin"
+    ? [...navigation, { to: "/settings", label: "Settings", icon: Settings }]
+    : navigation;
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const title = navigation.find((item) => location.pathname.startsWith(item.to))?.label || "Overview";
+  const title = visibleNavigation.find((item) => location.pathname.startsWith(item.to))?.label || "Overview";
   const displayName = user?.name || (user?.role === "manager" ? "Manager" : "Admin");
   const initials = displayName === "Admin 1" ? "A1" : displayName === "Admin 2" ? "A2" : displayName === "Manager" ? "M" : "A";
 
@@ -29,7 +32,7 @@ export default function AdminShell({ children, user, newOrders = 0, notification
         <div className="workspace-tag"><span className="workspace-dot" /> ADMIN WORKSPACE</div>
         <div className="nav-caption">MANAGEMENT</div>
         <nav className="side-nav" aria-label="Main navigation">
-          {navigation.map(({ to, label, icon: Icon }) => (
+          {visibleNavigation.map(({ to, label, icon: Icon }) => (
             <NavLink key={to} to={to} onClick={() => setMenuOpen(false)} className={({ isActive }) => `nav-link${isActive ? " active" : ""}`}>
               <Icon size={18} strokeWidth={1.8} />
               <span>{label}</span>

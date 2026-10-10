@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import Pagination from "../components/Pagination";
 import RecordsTable from "../components/RecordsTable";
 
-export default function RecordsPage({ type, result, onPage, onFilter, onOpen, newOrderIds, dismissed }) {
+export default function RecordsPage({ type, result, onPage, onFilter, onOpen, onDeleteMember, onEditMember, deleteMessage, newOrderIds, dismissed }) {
   const [search, setSearch] = useState("");
   const isOrders = type === "orders";
   useEffect(() => setSearch(""), [type]);
@@ -12,6 +12,7 @@ export default function RecordsPage({ type, result, onPage, onFilter, onOpen, ne
       <div className="page-intro list-intro">
         <span className="record-count">{result?.total ?? 0} {type}</span>
       </div>
+      {deleteMessage && <div className="notification" role="status">{deleteMessage}</div>}
       <div className="filter-bar">
         <label className="search-field"><Search size={17} /><input aria-label={isOrders ? "Search orders" : "Search members"} placeholder={isOrders ? "Search order, customer or recipient" : "Search name, mobile or email"} value={search} onChange={(event) => { setSearch(event.target.value); onFilter("search", event.target.value); }} /></label>
         {isOrders && <>
@@ -21,7 +22,7 @@ export default function RecordsPage({ type, result, onPage, onFilter, onOpen, ne
           <label className="date-filter"><span>To</span><input aria-label="Orders to date" type="date" onChange={(event) => onFilter("to", event.target.value)} /></label>
         </>}
       </div>
-      <RecordsTable items={result?.items || []} type={type} onOpen={onOpen} newOrderIds={newOrderIds} dismissed={dismissed} />
+      <RecordsTable items={result?.items || []} type={type} onOpen={onOpen} onDeleteMember={onDeleteMember} onEditMember={onEditMember} newOrderIds={newOrderIds} dismissed={dismissed} />
       <Pagination result={result} onPage={onPage} />
     </>
   );

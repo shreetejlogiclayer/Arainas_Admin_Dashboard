@@ -41,4 +41,10 @@ Open <http://localhost:4173>. The dashboard proxy targets `http://localhost:5001
 
 The **Customer orders** section summarizes each customer’s order count and most recent order date. Search by customer name or mobile number and filter orders by an inclusive date range. Excel downloads include all matching customers, not just the visible page.
 
+The **Settings** section is available to Admin-role accounts, which can change their own password or the Manager password after confirming their own password. Manager accounts do not have Settings access or self-service password changes here. New passwords must be at least 10 characters.
+
+Admin-role accounts can permanently delete customer members from the member list or member profile. Deletion removes the member and related account data, including orders and stored profile photos, after explicit confirmation. Manager and Admin accounts cannot be deleted through this action.
+
+Admin-role accounts can edit a customer's name, email, mobile numbers, and account status from the member list or profile. Changes are saved to the database and reflected immediately in the dashboard.
+
 Each order has an **Open parcel PDF** action in the orders table and order detail. It opens a 4 × 6 inch parcel summary in a new browser tab using the sender details from the Arainas company configuration and the recipient, buyer, address, and item snapshots saved with that order.

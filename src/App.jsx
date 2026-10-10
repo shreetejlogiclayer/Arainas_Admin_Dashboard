@@ -1,19 +1,29 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Trash2 } from "lucide-react";
 import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import AdminShell from "./components/AdminShell";
 import { Loading } from "./components/Feedback";
 import { api } from "./lib/api";
 import DetailPage from "./pages/DetailPage";
+import MemberEditorModal from "./components/MemberEditorModal";
 import LoginPage from "./pages/LoginPage";
 import OverviewPage from "./pages/OverviewPage";
 import RecordsPage from "./pages/RecordsPage";
 import CustomerOrdersPage from "./pages/CustomerOrdersPage";
+import SettingsPage from "./pages/SettingsPage";
 
 function AdminRoutes({ user, onLogout, newOrderIds, dismissed, notification, onDismiss, error, onRetry }) {
   const [overview, setOverview] = useState(null);
   const [overviewOrders, setOverviewOrders] = useState(null);
   const [result, setResult] = useState(null);
   const [record, setRecord] = useState(null);
+  const [memberToDelete, setMemberToDelete] = useState(null);
+  const [deletingMember, setDeletingMember] = useState(false);
+  const [memberDeleteMessage, setMemberDeleteMessage] = useState("");
+  const [memberDeleteError, setMemberDeleteError] = useState("");
+  const [memberToEdit, setMemberToEdit] = useState(null);
+  const [memberUpdateMessage, setMemberUpdateMessage] = useState("");
+  const deleteDialogRef = useRef(null);
   const [loading, setLoading] = useState(false);
   const [filters, setFilters] = useState({ page: 1, search: "", status: "", payment: "", from: "", to: "" });
   const location = useLocation();
@@ -88,18 +98,115 @@ function AdminRoutes({ user, onLogout, newOrderIds, dismissed, notification, onD
     setFilters((current) => ({ ...current, page: 1, search: "", from: "", to: "" }));
   }
 
+  async function confirmDeleteMember() {
+    if (!memberToDelete || deletingMember) return;
+    const member = memberToDelete;
+    const name = member.profile?.fullName || member.email || member.mobile || "Member";
+    setDeletingMember(true);
+    setMemberDeleteError("");
+    try {
+      const deletion = await api(`/members/${encodeURIComponent(member.id)}`, { method: "DELETE" });
+      if (isMemberDetail) {
+        navigate("/members", { replace: true });
+      } else {
+        setResult((current) => current ? {
+          ...current,
+          items: current.items.filter((item) => item.id !== member.id),
+          total: Math.max(0, current.total - 1),
+        } : current);
+        if (result?.items?.length === 1 && filters.page > 1) {
+          setFilters((current) => ({ ...current, page: current.page - 1 }));
+        }
+      }
+      setMemberToDelete(null);
+      setMemberDeleteMessage(`${name} and their related account data were permanently deleted.${deletion.warning ? ` ${deletion.warning}` : ""}`);
+      onRetry(null);
+    } catch (deleteError) {
+      setMemberDeleteError(deleteError.message || "Unable to delete this member. Please try again.");
+    } finally {
+      setDeletingMember(false);
+    }
+  }
+
+  function openDeleteMember(member) {
+    setMemberDeleteMessage("");
+    setMemberDeleteError("");
+    setMemberToDelete(member);
+  }
+
+  useEffect(() => {
+    if (!memberToDelete) return undefined;
+    deleteDialogRef.current?.focus();
+    function closeOnEscape(event) {
+      if (event.key === "Escape" && !deletingMember) setMemberToDelete(null);
+    }
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [memberToDelete, deletingMember]);
+
+  useEffect(() => {
+    if (!memberUpdateMessage) return undefined;
+    const timer = setTimeout(() => setMemberUpdateMessage(null), 5000);
+    return () => clearTimeout(timer);
+  }, [memberUpdateMessage]);
+
+  function openEditMember(member) {
+    setMemberUpdateMessage("");
+    setMemberToEdit(member);
+  }
+
+  async function saveMemberChanges(changes) {
+    const updated = await api(`/members/${encodeURIComponent(memberToEdit.id)}`, {
+      method: "PUT",
+      body: JSON.stringify(changes),
+    });
+    setResult((current) => current ? {
+      ...current,
+      items: current.items.map((item) => item.id === updated.id
+        ? { ...item, ...updated, profile: { ...item.profile, ...updated.profile } }
+        : item),
+    } : current);
+    setRecord((current) => current?.id === updated.id
+      ? { ...current, ...updated, profile: { ...current.profile, ...updated.profile } }
+      : current);
+    setMemberToEdit(null);
+    setMemberUpdateMessage({ text: `${updated.profile?.fullName || "Member"} updated successfully.` });
+    onRetry(null);
+  }
+
   return (
     <AdminShell user={user} newOrders={newOrderIds.size} notification={notification} onDismiss={onDismiss} onLogout={onLogout} error={error} onRetry={load}>
+      {memberUpdateMessage && <div className="notification" role="status">{memberUpdateMessage.text}</div>}
       <Routes>
         <Route path="/" element={<Navigate to="/overview" replace />} />
         <Route path="/overview" element={loading && !overview ? <Loading /> : <OverviewPage overview={overview} orders={overviewOrders} onRefresh={load} onOpenOrder={(id) => navigate(`/orders/${encodeURIComponent(id)}`)} newOrderIds={newOrderIds} dismissed={dismissed} />} />
-        <Route path="/members" element={loading && !result ? <Loading /> : <RecordsPage type="members" result={result} onPage={(page) => setFilters((current) => ({ ...current, page }))} onFilter={changeFilter} onOpen={(id) => navigate(`/members/${encodeURIComponent(id)}`)} />} />
+        <Route path="/members" element={loading && !result ? <Loading /> : <RecordsPage type="members" result={result} onPage={(page) => setFilters((current) => ({ ...current, page }))} onFilter={changeFilter} onOpen={(id) => navigate(`/members/${encodeURIComponent(id)}`)} onEditMember={user?.role === "admin" ? openEditMember : undefined} onDeleteMember={user?.role === "admin" ? openDeleteMember : undefined} deleteMessage={memberDeleteMessage} />} />
         <Route path="/orders" element={loading && !result ? <Loading /> : <RecordsPage type="orders" result={result} onPage={(page) => setFilters((current) => ({ ...current, page }))} onFilter={changeFilter} onOpen={(id) => navigate(`/orders/${encodeURIComponent(id)}`)} newOrderIds={newOrderIds} dismissed={dismissed} />} />
         <Route path="/customer-orders" element={loading && !result ? <Loading /> : <CustomerOrdersPage result={result} filters={filters} onPage={(page) => setFilters((current) => ({ ...current, page }))} onFilter={changeFilter} onReset={resetCustomerOrderFilters} onError={onRetry} />} />
-        <Route path="/members/:id" element={<DetailPage type="member" record={record} loading={loading} error={error} onOpenOrder={(id) => navigate(`/orders/${encodeURIComponent(id)}`)} />} />
+        <Route path="/settings" element={user?.role === "admin" ? <SettingsPage user={user} /> : <Navigate to="/overview" replace />} />
+        <Route path="/members/:id" element={<DetailPage type="member" record={record} loading={loading} error={error} onEditMember={user?.role === "admin" ? openEditMember : undefined} onDeleteMember={user?.role === "admin" ? openDeleteMember : undefined} onOpenOrder={(id) => navigate(`/orders/${encodeURIComponent(id)}`)} />} />
         <Route path="/orders/:id" element={<DetailPage type="order" record={record} loading={loading} error={error} />} />
         <Route path="*" element={<Navigate to="/overview" replace />} />
       </Routes>
+      {memberToDelete && (
+        <div className="confirm-overlay" onMouseDown={(event) => { if (event.target === event.currentTarget && !deletingMember) setMemberToDelete(null); }}>
+          <section ref={deleteDialogRef} className="confirm-dialog" role="alertdialog" aria-modal="true" aria-labelledby="delete-member-title" aria-describedby="delete-member-description" tabIndex="-1">
+            <span className="confirm-icon"><Trash2 size={21} /></span>
+            <h2 id="delete-member-title">Delete member?</h2>
+            <p id="delete-member-description">
+              Permanently delete <strong>{memberToDelete.profile?.fullName || memberToDelete.email || memberToDelete.mobile || "this member"}</strong> and their profile, addresses, referrals, coupons, orders, and account data? This cannot be undone.
+            </p>
+            {memberDeleteError && <div className="login-error" role="alert">{memberDeleteError}</div>}
+            <div className="confirm-actions">
+              <button className="button button-secondary" type="button" onClick={() => setMemberToDelete(null)} disabled={deletingMember}>Cancel</button>
+              <button className="button button-danger" type="button" onClick={confirmDeleteMember} disabled={deletingMember}>
+                <Trash2 size={15} /> {deletingMember ? "Deleting…" : "Delete member"}
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
+      {memberToEdit && <MemberEditorModal member={memberToEdit} onClose={() => setMemberToEdit(null)} onSave={saveMemberChanges} />}
     </AdminShell>
   );
 }
