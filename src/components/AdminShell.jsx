@@ -10,11 +10,13 @@ const navigation = [
   { to: "/customer-orders", label: "Customer orders", icon: UserRoundSearch },
 ];
 
-export default function AdminShell({ children, newOrders = 0, notification, onDismiss, onLogout, error, onRetry }) {
+export default function AdminShell({ children, user, newOrders = 0, notification, onDismiss, onLogout, error, onRetry }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const title = navigation.find((item) => location.pathname.startsWith(item.to))?.label || "Overview";
+  const displayName = user?.name || (user?.role === "manager" ? "Manager" : "Admin");
+  const initials = displayName === "Admin 1" ? "A1" : displayName === "Admin 2" ? "A2" : displayName === "Manager" ? "M" : "A";
 
   return (
     <div className="app-shell">
@@ -37,8 +39,8 @@ export default function AdminShell({ children, newOrders = 0, notification, onDi
         </nav>
         <div className="sidebar-bottom">
           <div className="admin-profile">
-            <span className="admin-avatar">A</span>
-            <span className="admin-profile-copy"><strong>Administrator</strong><small><span className="account-dot" /> ARAINA operations</small></span>
+            <span className="admin-avatar">{initials}</span>
+            <span className="admin-profile-copy"><strong>{displayName}</strong><small><span className="account-dot" /> {user?.role === "manager" ? "Manager" : "Admin"}</small></span>
           </div>
           <button className="signout-button" onClick={onLogout}><LogOut size={16} /><span>Sign out</span></button>
         </div>

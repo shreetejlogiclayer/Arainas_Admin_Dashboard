@@ -9,7 +9,7 @@ import OverviewPage from "./pages/OverviewPage";
 import RecordsPage from "./pages/RecordsPage";
 import CustomerOrdersPage from "./pages/CustomerOrdersPage";
 
-function AdminRoutes({ onLogout, newOrderIds, dismissed, notification, onDismiss, error, onRetry }) {
+function AdminRoutes({ user, onLogout, newOrderIds, dismissed, notification, onDismiss, error, onRetry }) {
   const [overview, setOverview] = useState(null);
   const [overviewOrders, setOverviewOrders] = useState(null);
   const [result, setResult] = useState(null);
@@ -89,7 +89,7 @@ function AdminRoutes({ onLogout, newOrderIds, dismissed, notification, onDismiss
   }
 
   return (
-    <AdminShell newOrders={newOrderIds.size} notification={notification} onDismiss={onDismiss} onLogout={onLogout} error={error} onRetry={load}>
+    <AdminShell user={user} newOrders={newOrderIds.size} notification={notification} onDismiss={onDismiss} onLogout={onLogout} error={error} onRetry={load}>
       <Routes>
         <Route path="/" element={<Navigate to="/overview" replace />} />
         <Route path="/overview" element={loading && !overview ? <Loading /> : <OverviewPage overview={overview} orders={overviewOrders} onRefresh={load} onOpenOrder={(id) => navigate(`/orders/${encodeURIComponent(id)}`)} newOrderIds={newOrderIds} dismissed={dismissed} />} />
@@ -106,6 +106,7 @@ function AdminRoutes({ onLogout, newOrderIds, dismissed, notification, onDismiss
 
 export default function App() {
   const [authenticated, setAuthenticated] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
   const [checkingSession, setCheckingSession] = useState(true);
   const [loginError, setLoginError] = useState("");
   const [globalError, setGlobalError] = useState("");
@@ -121,7 +122,8 @@ export default function App() {
 
   useEffect(() => {
     api("/me")
-      .then(() => {
+      .then((session) => {
+        setCurrentUser(session.user);
         setAuthenticated(true);
         setGlobalError("");
       })
@@ -161,7 +163,8 @@ export default function App() {
 
   async function login(email, password) {
     try {
-      await api("/login", { method: "POST", body: JSON.stringify({ email, password }) });
+      const session = await api("/login", { method: "POST", body: JSON.stringify({ email, password }) });
+      setCurrentUser(session.user);
       setAuthenticated(true);
       setLoginError("");
       setGlobalError("");
@@ -176,6 +179,7 @@ export default function App() {
       await api("/logout", { method: "POST" });
     } finally {
       setAuthenticated(false);
+      setCurrentUser(null);
       setGlobalError("");
       setNewOrderIds(new Set());
       setDismissed(new Set());
@@ -191,5 +195,5 @@ export default function App() {
 
   if (checkingSession) return <Loading label="Checking secure session…" />;
   if (!authenticated) return <LoginPage onLogin={login} error={loginError} />;
-  return <AdminRoutes onLogout={logout} newOrderIds={newOrderIds} dismissed={dismissed} notification={notification} onDismiss={dismissNotification} error={globalError} onRetry={handleError} />;
+  return <AdminRoutes user={currentUser} onLogout={logout} newOrderIds={newOrderIds} dismissed={dismissed} notification={notification} onDismiss={dismissNotification} error={globalError} onRetry={handleError} />;
 }
