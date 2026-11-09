@@ -9,7 +9,7 @@ export default function CustomerOrdersPage({ result, filters, onPage, onFilter, 
   const [exporting, setExporting] = useState(false);
 
   useEffect(() => setSearch(filters.search), [filters.search]);
-  const hasFilters = Boolean(search || filters.search || filters.from || filters.to);
+  const hasFilters = Boolean(search || filters.search || filters.from || filters.to || filters.orderedThisMonth);
 
   async function exportCustomers() {
     setExporting(true);
@@ -20,6 +20,7 @@ export default function CustomerOrdersPage({ result, filters, onPage, onFilter, 
         search: filters.search,
         from: filters.from,
         to: filters.to,
+        orderedThisMonth: filters.orderedThisMonth,
       });
       const firstPage = await api(`/customer-orders?${query}`);
       const customers = [...firstPage.items];
@@ -66,6 +67,14 @@ export default function CustomerOrdersPage({ result, filters, onPage, onFilter, 
           <span>To</span>
           <input aria-label="Orders to date" type="date" value={filters.to} min={filters.from || undefined} onChange={(event) => onFilter("to", event.target.value)} />
         </label>
+        <label className="select-filter">
+          <CalendarDays size={15} />
+          <select aria-label="Filter customers by orders this month" value={filters.orderedThisMonth} onChange={(event) => onFilter("orderedThisMonth", event.target.value)}>
+            <option value="">All customers</option>
+            <option value="yes">Ordered this month: Yes</option>
+            <option value="no">Ordered this month: No</option>
+          </select>
+        </label>
         <button className="button button-secondary" onClick={() => { setSearch(""); onReset(); }} disabled={!hasFilters}>
           <RotateCcw size={15} /> Reset filters
         </button>
@@ -76,7 +85,7 @@ export default function CustomerOrdersPage({ result, filters, onPage, onFilter, 
           <div className="table-scroll">
             <table>
               <thead>
-                <tr><th>CUSTOMER</th><th>MOBILE</th><th>NUMBER OF ORDERS</th><th>LAST ORDER DATE</th></tr>
+                <tr><th>CUSTOMER</th><th>MOBILE</th><th>NUMBER OF ORDERS</th><th>LAST ORDER DATE</th><th>LAST ORDER BOXES</th><th>ORDERED THIS MONTH</th></tr>
               </thead>
               <tbody>
                 {result.items.map((customer) => (
@@ -85,6 +94,8 @@ export default function CustomerOrdersPage({ result, filters, onPage, onFilter, 
                     <td>{customer.mobile || "—"}</td>
                     <td><strong>{formatCount(customer.orderCount)}</strong></td>
                     <td>{formatDate(customer.lastOrderAt)}</td>
+                    <td>{formatCount(customer.lastOrderBoxes)}</td>
+                    <td><span className={`month-order-badge ${customer.orderedThisMonth ? "yes" : "no"}`}>{customer.orderedThisMonth ? "Yes" : "No"}</span></td>
                   </tr>
                 ))}
               </tbody>

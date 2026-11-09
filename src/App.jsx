@@ -11,8 +11,11 @@ import OverviewPage from "./pages/OverviewPage";
 import RecordsPage from "./pages/RecordsPage";
 import CustomerOrdersPage from "./pages/CustomerOrdersPage";
 import SettingsPage from "./pages/SettingsPage";
+import PricingPage from "./pages/PricingPage";
 
-function AdminRoutes({ user, onLogout, newOrderIds, dismissed, notification, onDismiss, error, onRetry }) {
+const pricingAdminEmails = new Set(["rohini.dixit@arainas.com", "yogendra.dixit@arainas.com"]);
+
+function AdminRoutes({ user, onLogout, newOrderIds, dismissed, downloadedParcelOrderIds, onParcelPdfDownloaded, notification, onDismiss, error, onRetry }) {
   const [overview, setOverview] = useState(null);
   const [overviewOrders, setOverviewOrders] = useState(null);
   const [result, setResult] = useState(null);
@@ -25,7 +28,7 @@ function AdminRoutes({ user, onLogout, newOrderIds, dismissed, notification, onD
   const [memberUpdateMessage, setMemberUpdateMessage] = useState("");
   const deleteDialogRef = useRef(null);
   const [loading, setLoading] = useState(false);
-  const [filters, setFilters] = useState({ page: 1, search: "", status: "", payment: "", from: "", to: "" });
+  const [filters, setFilters] = useState({ page: 1, search: "", status: "", payment: "", from: "", to: "", orderedThisMonth: "" });
   const location = useLocation();
   const navigate = useNavigate();
   const searchTimer = useRef();
@@ -35,6 +38,7 @@ function AdminRoutes({ user, onLogout, newOrderIds, dismissed, notification, onD
   const isMembers = location.pathname === "/members";
   const isOrders = location.pathname === "/orders";
   const isCustomerOrders = location.pathname === "/customer-orders";
+  const canManagePricing = user?.role === "admin" && pricingAdminEmails.has(user.email?.toLowerCase());
   const pageType = isMembers ? "members" : isCustomerOrders ? "customer-orders" : "orders";
   const recordId = (isMemberDetail || isOrderDetail) ? decodeURIComponent(location.pathname.split("/").at(-1)) : "";
 
@@ -54,6 +58,8 @@ function AdminRoutes({ user, onLogout, newOrderIds, dismissed, notification, onD
           page: String(filters.page),
           limit: "10",
           search: filters.search,
+          ...(isOrders ? { status: filters.status, paymentStatus: filters.payment } : {}),
+          ...(isCustomerOrders ? { orderedThisMonth: filters.orderedThisMonth } : {}),
           ...(isOrders || isCustomerOrders ? { from: filters.from, to: filters.to } : {}),
         });
         setResult(await api(`/${pageType}?${query}`));
@@ -70,7 +76,7 @@ function AdminRoutes({ user, onLogout, newOrderIds, dismissed, notification, onD
   }, [filters, isCustomerOrders, isMemberDetail, isMembers, isOrderDetail, isOrders, isOverview, pageType, recordId, onRetry]);
 
   useEffect(() => {
-    if (isMembers || isOrders || isCustomerOrders) setFilters({ page: 1, search: "", status: "", payment: "", from: "", to: "" });
+    if (isMembers || isOrders || isCustomerOrders) setFilters({ page: 1, search: "", status: "", payment: "", from: "", to: "", orderedThisMonth: "" });
     if (isMemberDetail || isOrderDetail) setRecord(null);
   }, [location.pathname, isCustomerOrders, isMemberDetail, isMembers, isOrderDetail, isOrders]);
 
@@ -95,7 +101,7 @@ function AdminRoutes({ user, onLogout, newOrderIds, dismissed, notification, onD
 
   function resetCustomerOrderFilters() {
     clearTimeout(searchTimer.current);
-    setFilters((current) => ({ ...current, page: 1, search: "", from: "", to: "" }));
+    setFilters((current) => ({ ...current, page: 1, search: "", from: "", to: "", orderedThisMonth: "" }));
   }
 
   async function confirmDeleteMember() {
@@ -174,15 +180,30 @@ function AdminRoutes({ user, onLogout, newOrderIds, dismissed, notification, onD
     onRetry(null);
   }
 
+  async function updateOrderStatus(orderId, orderStatus) {
+    const updated = await api(`/orders/${encodeURIComponent(orderId)}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ orderStatus }),
+    });
+    const applyStatus = (current) => current ? {
+      ...current,
+      items: current.items.map((order) => order.id === updated.id ? { ...order, ...updated } : order),
+    } : current;
+    setResult(applyStatus);
+    setOverviewOrders(applyStatus);
+    setRecord((current) => current?.id === updated.id ? { ...current, ...updated } : current);
+  }
+
   return (
     <AdminShell user={user} newOrders={newOrderIds.size} notification={notification} onDismiss={onDismiss} onLogout={onLogout} error={error} onRetry={load}>
       {memberUpdateMessage && <div className="notification" role="status">{memberUpdateMessage.text}</div>}
       <Routes>
         <Route path="/" element={<Navigate to="/overview" replace />} />
-        <Route path="/overview" element={loading && !overview ? <Loading /> : <OverviewPage overview={overview} orders={overviewOrders} onRefresh={load} onOpenOrder={(id) => navigate(`/orders/${encodeURIComponent(id)}`)} newOrderIds={newOrderIds} dismissed={dismissed} />} />
+        <Route path="/overview" element={loading && !overview ? <Loading /> : <OverviewPage overview={overview} orders={overviewOrders} onRefresh={load} onOpenOrder={(id) => navigate(`/orders/${encodeURIComponent(id)}`)} onParcelPdfDownloaded={onParcelPdfDownloaded} downloadedParcelOrderIds={downloadedParcelOrderIds} newOrderIds={newOrderIds} dismissed={dismissed} />} />
         <Route path="/members" element={loading && !result ? <Loading /> : <RecordsPage type="members" result={result} onPage={(page) => setFilters((current) => ({ ...current, page }))} onFilter={changeFilter} onOpen={(id) => navigate(`/members/${encodeURIComponent(id)}`)} onEditMember={user?.role === "admin" ? openEditMember : undefined} onDeleteMember={user?.role === "admin" ? openDeleteMember : undefined} deleteMessage={memberDeleteMessage} />} />
-        <Route path="/orders" element={loading && !result ? <Loading /> : <RecordsPage type="orders" result={result} onPage={(page) => setFilters((current) => ({ ...current, page }))} onFilter={changeFilter} onOpen={(id) => navigate(`/orders/${encodeURIComponent(id)}`)} newOrderIds={newOrderIds} dismissed={dismissed} />} />
+        <Route path="/orders" element={loading && !result ? <Loading /> : <RecordsPage type="orders" result={result} onPage={(page) => setFilters((current) => ({ ...current, page }))} onFilter={changeFilter} onOpen={(id) => navigate(`/orders/${encodeURIComponent(id)}`)} onUpdateOrderStatus={updateOrderStatus} onParcelPdfDownloaded={onParcelPdfDownloaded} downloadedParcelOrderIds={downloadedParcelOrderIds} newOrderIds={newOrderIds} dismissed={dismissed} />} />
         <Route path="/customer-orders" element={loading && !result ? <Loading /> : <CustomerOrdersPage result={result} filters={filters} onPage={(page) => setFilters((current) => ({ ...current, page }))} onFilter={changeFilter} onReset={resetCustomerOrderFilters} onError={onRetry} />} />
+        <Route path="/pricing" element={canManagePricing ? <PricingPage /> : <Navigate to="/overview" replace />} />
         <Route path="/settings" element={user?.role === "admin" ? <SettingsPage user={user} /> : <Navigate to="/overview" replace />} />
         <Route path="/members/:id" element={<DetailPage type="member" record={record} loading={loading} error={error} onEditMember={user?.role === "admin" ? openEditMember : undefined} onDeleteMember={user?.role === "admin" ? openDeleteMember : undefined} onOpenOrder={(id) => navigate(`/orders/${encodeURIComponent(id)}`)} />} />
         <Route path="/orders/:id" element={<DetailPage type="order" record={record} loading={loading} error={error} />} />
@@ -220,6 +241,7 @@ export default function App() {
   const [notification, setNotification] = useState("");
   const [newOrderIds, setNewOrderIds] = useState(new Set());
   const [dismissed, setDismissed] = useState(new Set());
+  const [downloadedParcelOrderIds, setDownloadedParcelOrderIds] = useState(new Set());
   const seenOrders = useRef(null);
   const navigate = useNavigate();
 
@@ -300,7 +322,14 @@ export default function App() {
     setDismissed((current) => new Set([...current, ...newOrderIds]));
   }
 
+  const markParcelPdfDownloaded = useCallback(async (orderId) => {
+    if (!orderId) return;
+    await api(`/orders/${encodeURIComponent(orderId)}/parcel-summary-downloaded`, { method: "PATCH" });
+    setDownloadedParcelOrderIds((current) => new Set(current).add(orderId));
+    setDismissed((current) => new Set(current).add(orderId));
+  }, []);
+
   if (checkingSession) return <Loading label="Checking secure session…" />;
   if (!authenticated) return <LoginPage onLogin={login} error={loginError} />;
-  return <AdminRoutes user={currentUser} onLogout={logout} newOrderIds={newOrderIds} dismissed={dismissed} notification={notification} onDismiss={dismissNotification} error={globalError} onRetry={handleError} />;
+  return <AdminRoutes user={currentUser} onLogout={logout} newOrderIds={newOrderIds} dismissed={dismissed} downloadedParcelOrderIds={downloadedParcelOrderIds} onParcelPdfDownloaded={markParcelPdfDownloaded} notification={notification} onDismiss={dismissNotification} error={globalError} onRetry={handleError} />;
 }

@@ -6,7 +6,7 @@ import { formatCount } from "../lib/api";
 
 const icons = [Users, UserRoundCheck, ShoppingBag, CircleDollarSign];
 
-export default function OverviewPage({ overview, orders, onRefresh, onOpenOrder, newOrderIds, dismissed }) {
+export default function OverviewPage({ overview, orders, onRefresh, onOpenOrder, onParcelPdfDownloaded, downloadedParcelOrderIds, newOrderIds, dismissed }) {
   if (!overview) return null;
   const stats = [
     { label: "Registered members", value: overview.members.total, tone: "pink" },
@@ -36,7 +36,7 @@ export default function OverviewPage({ overview, orders, onRefresh, onOpenOrder,
       <aside className="notice-card"><span className="notice-icon"><CircleDollarSign size={19} /></span><div><strong>Payments are not configured in the portal</strong></div></aside>
       <section className="section-block">
         <div className="section-heading"><div><span className="eyebrow">LATEST ACTIVITY</span><h2>Recent orders</h2></div><Link className="text-link" to="/orders">Open orders <ArrowUpRight size={15} /></Link></div>
-        <RecordsTable items={orders?.items?.slice(0, 5) || []} type="orders" onOpen={onOpenOrder} newOrderIds={newOrderIds} dismissed={dismissed} />
+        <RecordsTable items={orders?.items?.slice(0, 5) || []} type="orders" onOpen={onOpenOrder} onParcelPdfDownloaded={onParcelPdfDownloaded} downloadedParcelOrderIds={downloadedParcelOrderIds} newOrderIds={newOrderIds} dismissed={dismissed} />
       </section>
     </>
   );

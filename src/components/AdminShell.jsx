@@ -1,5 +1,5 @@
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
-import { Bell, LayoutDashboard, LogOut, Menu, Package, Settings, Users, UserRoundSearch, X } from "lucide-react";
+import { Bell, CircleDollarSign, LayoutDashboard, LogOut, Menu, Package, Settings, Users, UserRoundSearch, X } from "lucide-react";
 import { useState } from "react";
 import { ErrorBanner } from "./Feedback";
 
@@ -11,8 +11,10 @@ const navigation = [
 ];
 
 export default function AdminShell({ children, user, newOrders = 0, notification, onDismiss, onLogout, error, onRetry }) {
+  const canManagePricing = user?.role === "admin" &&
+    ["rohini.dixit@arainas.com", "yogendra.dixit@arainas.com"].includes(user.email?.toLowerCase());
   const visibleNavigation = user?.role === "admin"
-    ? [...navigation, { to: "/settings", label: "Settings", icon: Settings }]
+    ? [...navigation, ...(canManagePricing ? [{ to: "/pricing", label: "Pricing", icon: CircleDollarSign }] : []), { to: "/settings", label: "Settings", icon: Settings }]
     : navigation;
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();

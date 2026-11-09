@@ -10,9 +10,10 @@ export function createCustomerOrdersWorkbook(customers) {
     .replaceAll("'", "&apos;");
   const textCell = (reference, value, style = "") => `<c r="${reference}" t="inlineStr"${style}><is><t xml:space="preserve">${xmlEscape(value)}</t></is></c>`;
   const numberCell = (reference, value, style = "") => `<c r="${reference}"${style}><v>${value}</v></c>`;
-  const headers = ["CUSTOMER", "MOBILE", "NUMBER OF ORDERS", "LAST ORDER DATE"];
+  const headers = ["CUSTOMER", "MOBILE", "NUMBER OF ORDERS", "LAST ORDER DATE", "LAST ORDER BOXES", "ORDERED THIS MONTH"];
+  const columns = ["A", "B", "C", "D", "E", "F"];
   const rows = [
-    `<row r="1" ht="24" customHeight="1">${headers.map((header, index) => textCell(`${"ABCD"[index]}1`, header, ' s="1"')).join("")}</row>`,
+    `<row r="1" ht="24" customHeight="1">${headers.map((header, index) => textCell(`${columns[index]}1`, header, ' s="1"')).join("")}</row>`,
     ...customers.map((customer, index) => {
       const rowNumber = index + 2;
       return `<row r="${rowNumber}">${[
@@ -20,16 +21,18 @@ export function createCustomerOrdersWorkbook(customers) {
         textCell(`B${rowNumber}`, customer.mobile || "—"),
         numberCell(`C${rowNumber}`, Number(customer.orderCount) || 0, ' s="2"'),
         textCell(`D${rowNumber}`, formatDate(customer.lastOrderAt)),
+        numberCell(`E${rowNumber}`, Number(customer.lastOrderBoxes) || 0, ' s="2"'),
+        textCell(`F${rowNumber}`, customer.orderedThisMonth ? "Yes" : "No"),
       ].join("")}</row>`;
     }),
   ].join("");
-  const range = `A1:D${Math.max(customers.length + 1, 1)}`;
+  const range = `A1:F${Math.max(customers.length + 1, 1)}`;
   const worksheet = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
     <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
       <dimension ref="${range}"/>
       <sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>
       <sheetFormatPr defaultRowHeight="18"/>
-      <cols><col min="1" max="1" width="30" customWidth="1"/><col min="2" max="2" width="20" customWidth="1"/><col min="3" max="3" width="22" customWidth="1"/><col min="4" max="4" width="20" customWidth="1"/></cols>
+      <cols><col min="1" max="1" width="30" customWidth="1"/><col min="2" max="2" width="20" customWidth="1"/><col min="3" max="3" width="22" customWidth="1"/><col min="4" max="4" width="20" customWidth="1"/><col min="5" max="5" width="18" customWidth="1"/><col min="6" max="6" width="20" customWidth="1"/></cols>
       <sheetData>${rows}</sheetData>
       <autoFilter ref="${range}"/>
     </worksheet>`;

@@ -1,11 +1,25 @@
-import { createReadStream } from "node:fs";
+import { createReadStream, existsSync } from "node:fs";
 import { createServer } from "node:http";
 import { extname, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = resolve(fileURLToPath(new URL("./dist/", import.meta.url)));
-const apiUrl = new URL(process.env.ADMIN_API_URL || "http://localhost:5001");
+const apiUrlValue = process.env.ADMIN_API_URL
+  || (process.env.NODE_ENV === "production" ? "" : "http://localhost:5001");
+if (!apiUrlValue) {
+  throw new Error("ADMIN_API_URL must be set in production");
+}
+const apiUrl = new URL(apiUrlValue);
 const port = Number(process.env.PORT || 4173);
+if (!Number.isInteger(port) || port < 1 || port > 65535) {
+  throw new Error("PORT must be a valid TCP port");
+}
+if (!["http:", "https:"].includes(apiUrl.protocol)) {
+  throw new Error("ADMIN_API_URL must use HTTP or HTTPS");
+}
+if (!existsSync(resolve(root, "index.html"))) {
+  throw new Error("Dashboard build is missing. Run npm run build before starting the server.");
+}
 const types = {
   ".css": "text/css; charset=utf-8",
   ".html": "text/html; charset=utf-8",
@@ -16,6 +30,15 @@ const types = {
 };
 
 createServer(async (req, res) => {
+  if (req.method === "GET" && req.url?.split("?")[0] === "/health") {
+    res.writeHead(200, {
+      "content-type": "application/json; charset=utf-8",
+      "cache-control": "no-store",
+    });
+    res.end(JSON.stringify({ status: "ok" }));
+    return;
+  }
+
   if (req.url?.startsWith("/api/admin/")) {
     try {
       const url = new URL(req.url, apiUrl);
@@ -76,7 +99,7 @@ createServer(async (req, res) => {
   } catch {
     res.writeHead(500).end("Dashboard build is missing. Run npm run build.");
   }
-}).listen(port, () => console.log(`ARAINA Admin: http://localhost:${port}`));
+}).listen(port, "0.0.0.0", () => console.log(`ARAINA Admin listening on port ${port}`));
 
 function readBody(req) {
   return new Promise((resolveBody, reject) => {

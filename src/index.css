@@ -159,6 +159,18 @@ td strong { color: #343139; font-size: 11px; font-weight: 620; }
 .badge-shipped { color: #6c65a3; background: #f0effb; }
 .badge-delivered, .badge-success, .badge-active { color: #407657; background: var(--green-soft); }
 .badge-cancelled, .badge-failed, .badge-suspended, .badge-deleted { color: #a5545e; background: #fbedee; }
+.order-status-control { display: grid; gap: 4px; min-width: 100px; }
+.order-status-select-wrap { position: relative; display: inline-flex; width: fit-content; align-items: center; }
+.order-status-select { min-width: 96px; appearance: none; padding: 6px 26px 6px 9px; border: 1px solid transparent; border-radius: 6px; font-size: 10px; font-weight: 650; text-transform: capitalize; cursor: pointer; }
+.order-status-select-wrap > svg { position: absolute; right: 8px; pointer-events: none; }
+.order-status-pending .order-status-select { border-color: #f0dfc0; color: #95691f; background: #fff7e9; }
+.order-status-shipped .order-status-select { border-color: #dddaf2; color: #6c65a3; background: #f5f4fc; }
+.order-status-select:focus-visible { outline: 2px solid #c8a9d0; outline-offset: 2px; }
+.order-status-select:disabled { opacity: .65; cursor: wait; }
+.order-status-error { max-width: 180px; color: #a5545e; font-size: 10px; white-space: normal; }
+.month-order-badge { display: inline-flex; min-width: 40px; justify-content: center; padding: 4px 8px; border-radius: 999px; font-size: 10px; font-weight: 650; }
+.month-order-badge.yes { color: #407657; background: var(--green-soft); }
+.month-order-badge.no { color: #817983; background: #f1eff2; }
 .badge-stack { display: flex; gap: 7px; }
 .pagination { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 13px 2px; color: #8d8791; font-size: 11px; }
 .pagination > div { display: flex; gap: 7px; }
@@ -565,6 +577,25 @@ td, td strong { font-size: 12px; }
 .settings-password-wrap .password-toggle:hover { color: #ad4d66; background: #fff2f5; }
 .settings-form > .button { justify-self: start; margin-top: 4px; }
 .settings-form > .login-error, .settings-form > .notification { margin: 0; }
+.pricing-intro { justify-content: space-between; gap: 16px; }
+.pricing-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 14px; }
+.pricing-card { display: grid; align-content: start; gap: 13px; }
+.pricing-card-heading { display: flex; align-items: center; gap: 11px; }
+.pricing-quantity { display: grid; width: 38px; height: 38px; flex: 0 0 auto; place-items: center; border-radius: 11px; color: #a64e65; background: #fff0f3; font-size: 15px; font-weight: 700; }
+.pricing-card-heading h2 { margin: 0; color: #343139; font-size: 13px; font-weight: 650; }
+.pricing-card-heading p, .pricing-submit p { margin: 4px 0 0; color: #89838d; font-size: 11px; }
+.pricing-current { display: flex; align-items: center; justify-content: space-between; padding: 11px; border-radius: 8px; background: #faf8fa; color: #77717c; font-size: 11px; }
+.pricing-current strong { color: #343139; font-size: 13px; }
+.pricing-input-label { color: #59545d; font-size: 11px; font-weight: 600; }
+.pricing-input-wrap { display: flex; height: 42px; align-items: center; gap: 8px; padding: 0 11px; border: 1px solid #e9e5ea; border-radius: 8px; color: #8d8791; background: #fff; }
+.pricing-input-wrap:focus-within { border-color: #ef9aaa; outline: 3px solid rgb(239 95 125 / 11%); }
+.pricing-input-wrap input { width: 100%; min-width: 0; border: 0; outline: 0; color: #332f37; background: transparent; font-size: 13px; }
+.pricing-field-error { margin: -7px 0 0; color: #a5545e; font-size: 10px; }
+.pricing-total { display: flex; justify-content: space-between; padding-top: 11px; border-top: 1px solid var(--line); color: #77717c; font-size: 11px; }
+.pricing-total strong { color: #a64e65; font-size: 13px; }
+.pricing-submit { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 16px; }
+.pricing-submit p { margin: 0; }
+.pricing-submit .button { flex: 0 0 auto; }
 .back-link { font-size: 12px; }
 .login-form label { font-size: 12px; }
 .login-form .login-input-wrap input { font-size: 13px; }
