@@ -45,6 +45,9 @@ createServer(async (req, res) => {
       const headers = { accept: "application/json" };
       if (req.headers.cookie) headers.cookie = req.headers.cookie;
       if (req.headers["content-type"]) headers["content-type"] = req.headers["content-type"];
+      headers["x-forwarded-host"] = req.headers["x-forwarded-host"] || req.headers.host;
+      headers["x-forwarded-proto"] = req.headers["x-forwarded-proto"]?.split(",")[0].trim()
+        || (req.socket.encrypted ? "https" : "http");
       const body = ["GET", "HEAD"].includes(req.method) ? undefined : await readBody(req);
       const upstream = await fetch(url, { method: req.method, headers, body, redirect: "manual" });
       res.writeHead(upstream.status, {

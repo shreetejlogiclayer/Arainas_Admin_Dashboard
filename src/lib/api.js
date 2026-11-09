@@ -4,9 +4,21 @@ export async function api(path, options = {}) {
     headers: { "content-type": "application/json", ...options.headers },
     ...options,
   });
-  const result = await response.json().catch(() => ({}));
+  const responseText = await response.text();
+  let result = {};
+  try {
+    result = responseText ? JSON.parse(responseText) : {};
+  } catch {
+    if (response.ok) {
+      throw new Error("The API server returned an invalid response. Check the dashboard API configuration.");
+    }
+  }
   if (!response.ok) {
-    throw new Error(result.error?.message || "Request failed. Please try again.");
+    const message = result.error?.message
+      || (responseText && !response.headers.get("content-type")?.includes("text/html")
+        ? responseText.slice(0, 200)
+        : `The API server returned HTTP ${response.status}. Check the dashboard API configuration.`);
+    throw new Error(message);
   }
   return result.data;
 }
