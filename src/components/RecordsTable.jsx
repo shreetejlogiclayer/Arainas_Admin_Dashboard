@@ -62,7 +62,7 @@ export default function RecordsTable({ items = [], type, newOrderIds = new Set()
             <td>{order.deliveryRecipientName || "—"}</td><td>{formatDate(order.createdAt, true)}</td>
             <td><strong>{formatMoney(order.total)}</strong></td>
             <td><StatusBadge value={order.paymentStatus} /></td>
-            <td><div className="member-row-actions"><OrderPdfButton order={order} compact downloaded={downloaded} onDownloaded={onParcelPdfDownloaded} />{onDeleteOrder && <button className="icon-button delete-member-button" aria-label={`Delete order ${order.orderNumber}`} onClick={(event) => { event.stopPropagation(); onDeleteOrder(order); }}><Trash2 size={16} /></button>}</div></td>
+            <td><div className="member-row-actions"><OrderPdfButton order={order} compact downloaded={downloaded} disabled={order.deliveryMethod === "hand"} onDownloaded={onParcelPdfDownloaded} />{onDeleteOrder && <button className="icon-button delete-member-button" aria-label={`Delete order ${order.orderNumber}`} onClick={(event) => { event.stopPropagation(); onDeleteOrder(order); }}><Trash2 size={16} /></button>}</div></td>
             <td>{onUpdateOrderStatus && ["pending", "shipped"].includes(order.orderStatus) ? (
               <div className="order-status-control">
                 <span className={`order-status-select-wrap order-status-${order.orderStatus}`}>

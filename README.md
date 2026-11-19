@@ -56,6 +56,6 @@ Admin 1 and Admin 2 can permanently delete orders from the orders table after ex
 
 Admin-role accounts can edit a customer's name, email, mobile numbers, and account status from the member list or profile. Changes are saved to the database and reflected immediately in the dashboard.
 
-Each order has an **Open parcel PDF** action in the orders table and order detail. It opens a 4 × 6 inch parcel summary in a new browser tab using the sender details from the Arainas company configuration and the recipient, buyer, address, and item snapshots saved with that order.
+Courier orders have an **Open parcel PDF** action in the orders table and order detail. It opens a 4 × 6 inch parcel summary in a new browser tab using the sender details from the Arainas company configuration and the recipient, buyer, address, and item snapshots saved with that order. The PDF action is disabled for hand-delivered orders in the orders table.
 
 After an order's parcel summary is opened from a table, its table action is marked complete for all admin accounts and remains disabled. The order detail page can still open the summary again.
