@@ -14,6 +14,7 @@ import SettingsPage from "./pages/SettingsPage";
 import PricingPage from "./pages/PricingPage";
 
 const pricingAdminEmails = new Set(["rohini.dixit@arainas.com", "yogendra.dixit@arainas.com"]);
+const orderDeletionAdminEmails = new Set(["rohini.dixit@arainas.com", "yogendra.dixit@arainas.com"]);
 
 function AdminRoutes({ user, onLogout, newOrderIds, dismissed, downloadedParcelOrderIds, onParcelPdfDownloaded, notification, onDismiss, error, onRetry }) {
   const [overview, setOverview] = useState(null);
@@ -24,6 +25,10 @@ function AdminRoutes({ user, onLogout, newOrderIds, dismissed, downloadedParcelO
   const [deletingMember, setDeletingMember] = useState(false);
   const [memberDeleteMessage, setMemberDeleteMessage] = useState("");
   const [memberDeleteError, setMemberDeleteError] = useState("");
+  const [orderToDelete, setOrderToDelete] = useState(null);
+  const [deletingOrder, setDeletingOrder] = useState(false);
+  const [orderDeleteMessage, setOrderDeleteMessage] = useState("");
+  const [orderDeleteError, setOrderDeleteError] = useState("");
   const [memberToEdit, setMemberToEdit] = useState(null);
   const [memberUpdateMessage, setMemberUpdateMessage] = useState("");
   const deleteDialogRef = useRef(null);
@@ -39,6 +44,7 @@ function AdminRoutes({ user, onLogout, newOrderIds, dismissed, downloadedParcelO
   const isOrders = location.pathname === "/orders";
   const isCustomerOrders = location.pathname === "/customer-orders";
   const canManagePricing = user?.role === "admin" && pricingAdminEmails.has(user.email?.toLowerCase());
+  const canDeleteOrders = user?.role === "admin" && orderDeletionAdminEmails.has(user.email?.toLowerCase());
   const pageType = isMembers ? "members" : isCustomerOrders ? "customer-orders" : "orders";
   const recordId = (isMemberDetail || isOrderDetail) ? decodeURIComponent(location.pathname.split("/").at(-1)) : "";
 
@@ -134,6 +140,37 @@ function AdminRoutes({ user, onLogout, newOrderIds, dismissed, downloadedParcelO
     }
   }
 
+  async function confirmDeleteOrder() {
+    if (!orderToDelete || deletingOrder) return;
+    const order = orderToDelete;
+    setDeletingOrder(true);
+    setOrderDeleteError("");
+    try {
+      const deletion = await api(`/orders/${encodeURIComponent(order.id)}`, { method: "DELETE" });
+      setResult((current) => current ? {
+        ...current,
+        items: current.items.filter((item) => item.id !== order.id),
+        total: Math.max(0, current.total - 1),
+      } : current);
+      if (result?.items?.length === 1 && filters.page > 1) {
+        setFilters((current) => ({ ...current, page: current.page - 1 }));
+      }
+      setOrderToDelete(null);
+      setOrderDeleteMessage(`Order ${order.orderNumber} was permanently deleted.${deletion.warning ? ` ${deletion.warning}` : ""}`);
+      onRetry(null);
+    } catch (deleteError) {
+      setOrderDeleteError(deleteError.message || "Unable to delete this order. Please try again.");
+    } finally {
+      setDeletingOrder(false);
+    }
+  }
+
+  function openDeleteOrder(order) {
+    setOrderDeleteMessage("");
+    setOrderDeleteError("");
+    setOrderToDelete(order);
+  }
+
   function openDeleteMember(member) {
     setMemberDeleteMessage("");
     setMemberDeleteError("");
@@ -149,6 +186,16 @@ function AdminRoutes({ user, onLogout, newOrderIds, dismissed, downloadedParcelO
     window.addEventListener("keydown", closeOnEscape);
     return () => window.removeEventListener("keydown", closeOnEscape);
   }, [memberToDelete, deletingMember]);
+
+  useEffect(() => {
+    if (!orderToDelete) return undefined;
+    deleteDialogRef.current?.focus();
+    function closeOnEscape(event) {
+      if (event.key === "Escape" && !deletingOrder) setOrderToDelete(null);
+    }
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [orderToDelete, deletingOrder]);
 
   useEffect(() => {
     if (!memberUpdateMessage) return undefined;
@@ -201,7 +248,7 @@ function AdminRoutes({ user, onLogout, newOrderIds, dismissed, downloadedParcelO
         <Route path="/" element={<Navigate to="/overview" replace />} />
         <Route path="/overview" element={loading && !overview ? <Loading /> : <OverviewPage overview={overview} orders={overviewOrders} onRefresh={load} onOpenOrder={(id) => navigate(`/orders/${encodeURIComponent(id)}`)} onParcelPdfDownloaded={onParcelPdfDownloaded} downloadedParcelOrderIds={downloadedParcelOrderIds} newOrderIds={newOrderIds} dismissed={dismissed} />} />
         <Route path="/members" element={loading && !result ? <Loading /> : <RecordsPage type="members" result={result} onPage={(page) => setFilters((current) => ({ ...current, page }))} onFilter={changeFilter} onOpen={(id) => navigate(`/members/${encodeURIComponent(id)}`)} onEditMember={user?.role === "admin" ? openEditMember : undefined} onDeleteMember={user?.role === "admin" ? openDeleteMember : undefined} deleteMessage={memberDeleteMessage} />} />
-        <Route path="/orders" element={loading && !result ? <Loading /> : <RecordsPage type="orders" result={result} onPage={(page) => setFilters((current) => ({ ...current, page }))} onFilter={changeFilter} onOpen={(id) => navigate(`/orders/${encodeURIComponent(id)}`)} onUpdateOrderStatus={updateOrderStatus} onParcelPdfDownloaded={onParcelPdfDownloaded} downloadedParcelOrderIds={downloadedParcelOrderIds} newOrderIds={newOrderIds} dismissed={dismissed} />} />
+        <Route path="/orders" element={loading && !result ? <Loading /> : <RecordsPage type="orders" result={result} onPage={(page) => setFilters((current) => ({ ...current, page }))} onFilter={changeFilter} onOpen={(id) => navigate(`/orders/${encodeURIComponent(id)}`)} onDeleteOrder={canDeleteOrders ? openDeleteOrder : undefined} onUpdateOrderStatus={updateOrderStatus} onParcelPdfDownloaded={onParcelPdfDownloaded} downloadedParcelOrderIds={downloadedParcelOrderIds} newOrderIds={newOrderIds} deleteMessage={orderDeleteMessage} dismissed={dismissed} />} />
         <Route path="/customer-orders" element={loading && !result ? <Loading /> : <CustomerOrdersPage result={result} filters={filters} onPage={(page) => setFilters((current) => ({ ...current, page }))} onFilter={changeFilter} onReset={resetCustomerOrderFilters} onError={onRetry} />} />
         <Route path="/pricing" element={canManagePricing ? <PricingPage /> : <Navigate to="/overview" replace />} />
         <Route path="/settings" element={user?.role === "admin" ? <SettingsPage user={user} /> : <Navigate to="/overview" replace />} />
@@ -222,6 +269,24 @@ function AdminRoutes({ user, onLogout, newOrderIds, dismissed, downloadedParcelO
               <button className="button button-secondary" type="button" onClick={() => setMemberToDelete(null)} disabled={deletingMember}>Cancel</button>
               <button className="button button-danger" type="button" onClick={confirmDeleteMember} disabled={deletingMember}>
                 <Trash2 size={15} /> {deletingMember ? "Deleting…" : "Delete member"}
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
+      {orderToDelete && (
+        <div className="confirm-overlay" onMouseDown={(event) => { if (event.target === event.currentTarget && !deletingOrder) setOrderToDelete(null); }}>
+          <section ref={deleteDialogRef} className="confirm-dialog" role="alertdialog" aria-modal="true" aria-labelledby="delete-order-title" aria-describedby="delete-order-description" tabIndex="-1">
+            <span className="confirm-icon"><Trash2 size={21} /></span>
+            <h2 id="delete-order-title">Delete order?</h2>
+            <p id="delete-order-description">
+              Permanently delete order <strong>{orderToDelete.orderNumber}</strong> and its associated records? This cannot be undone. Deleting the record does not issue a payment refund.
+            </p>
+            {orderDeleteError && <div className="login-error" role="alert">{orderDeleteError}</div>}
+            <div className="confirm-actions">
+              <button className="button button-secondary" type="button" onClick={() => setOrderToDelete(null)} disabled={deletingOrder}>Cancel</button>
+              <button className="button button-danger" type="button" onClick={confirmDeleteOrder} disabled={deletingOrder}>
+                <Trash2 size={15} /> {deletingOrder ? "Deleting…" : "Delete order"}
               </button>
             </div>
           </section>

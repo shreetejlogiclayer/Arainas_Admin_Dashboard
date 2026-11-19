@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import Pagination from "../components/Pagination";
 import RecordsTable from "../components/RecordsTable";
 
-export default function RecordsPage({ type, result, onPage, onFilter, onOpen, onDeleteMember, onEditMember, onUpdateOrderStatus, onParcelPdfDownloaded, downloadedParcelOrderIds, deleteMessage, newOrderIds, dismissed }) {
+export default function RecordsPage({ type, result, onPage, onFilter, onOpen, onDeleteMember, onDeleteOrder, onEditMember, onUpdateOrderStatus, onParcelPdfDownloaded, downloadedParcelOrderIds, deleteMessage, newOrderIds, dismissed }) {
   const [search, setSearch] = useState("");
   const isOrders = type === "orders";
   useEffect(() => setSearch(""), [type]);
@@ -22,7 +22,7 @@ export default function RecordsPage({ type, result, onPage, onFilter, onOpen, on
           <label className="date-filter"><span>To</span><input aria-label="Orders to date" type="date" onChange={(event) => onFilter("to", event.target.value)} /></label>
         </>}
       </div>
-      <RecordsTable items={result?.items || []} type={type} onOpen={onOpen} onDeleteMember={onDeleteMember} onEditMember={onEditMember} onUpdateOrderStatus={onUpdateOrderStatus} onParcelPdfDownloaded={onParcelPdfDownloaded} downloadedParcelOrderIds={downloadedParcelOrderIds} newOrderIds={newOrderIds} dismissed={dismissed} />
+      <RecordsTable items={result?.items || []} type={type} onOpen={onOpen} onDeleteMember={onDeleteMember} onDeleteOrder={onDeleteOrder} onEditMember={onEditMember} onUpdateOrderStatus={onUpdateOrderStatus} onParcelPdfDownloaded={onParcelPdfDownloaded} downloadedParcelOrderIds={downloadedParcelOrderIds} newOrderIds={newOrderIds} dismissed={dismissed} />
       <Pagination result={result} onPage={onPage} />
     </>
   );

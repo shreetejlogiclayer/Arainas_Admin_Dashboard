@@ -4,7 +4,7 @@ import { formatDate, formatMoney } from "../lib/api";
 import StatusBadge from "./StatusBadge";
 import OrderPdfButton from "./OrderPdfButton";
 
-export default function RecordsTable({ items = [], type, newOrderIds = new Set(), dismissed = new Set(), downloadedParcelOrderIds = new Set(), onParcelPdfDownloaded, onOpen, onDeleteMember, onEditMember, onUpdateOrderStatus }) {
+export default function RecordsTable({ items = [], type, newOrderIds = new Set(), dismissed = new Set(), downloadedParcelOrderIds = new Set(), onParcelPdfDownloaded, onOpen, onDeleteMember, onDeleteOrder, onEditMember, onUpdateOrderStatus }) {
   const [updatingOrderIds, setUpdatingOrderIds] = useState(new Set());
   const [orderStatusError, setOrderStatusError] = useState(null);
 
@@ -62,7 +62,7 @@ export default function RecordsTable({ items = [], type, newOrderIds = new Set()
             <td>{order.deliveryRecipientName || "—"}</td><td>{formatDate(order.createdAt, true)}</td>
             <td><strong>{formatMoney(order.total)}</strong></td>
             <td><StatusBadge value={order.paymentStatus} /></td>
-            <td><OrderPdfButton order={order} compact downloaded={downloaded} onDownloaded={onParcelPdfDownloaded} /></td>
+            <td><div className="member-row-actions"><OrderPdfButton order={order} compact downloaded={downloaded} onDownloaded={onParcelPdfDownloaded} />{onDeleteOrder && <button className="icon-button delete-member-button" aria-label={`Delete order ${order.orderNumber}`} onClick={(event) => { event.stopPropagation(); onDeleteOrder(order); }}><Trash2 size={16} /></button>}</div></td>
             <td>{onUpdateOrderStatus && ["pending", "shipped"].includes(order.orderStatus) ? (
               <div className="order-status-control">
                 <span className={`order-status-select-wrap order-status-${order.orderStatus}`}>
