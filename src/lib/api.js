@@ -1,6 +1,10 @@
+const apiBaseUrl = (import.meta.env.VITE_ADMIN_API_URL
+  || (import.meta.env.DEV ? "/api/admin" : "https://arainas.com/api/admin"))
+  .replace(/\/+$/, "");
+
 export async function api(path, options = {}) {
-  const response = await fetch(`/api/admin${path}`, {
-    credentials: "same-origin",
+  const response = await fetch(`${apiBaseUrl}${path}`, {
+    credentials: apiBaseUrl.startsWith("/") ? "same-origin" : "include",
     headers: { "content-type": "application/json", ...options.headers },
     ...options,
   });
