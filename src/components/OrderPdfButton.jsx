@@ -3,9 +3,10 @@ import { useState } from "react";
 import { api } from "../lib/api";
 import { createOrderPdf } from "../lib/orderPdf";
 
-export default function OrderPdfButton({ order, orderId, compact = false, downloaded = false, disabled = false, onDownloaded }) {
+export default function OrderPdfButton({ order, orderId, compact = false, downloaded = false, onDownloaded }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const handDelivery = order?.deliveryMethod === "hand";
 
   async function download(event) {
     event?.stopPropagation();
@@ -39,7 +40,7 @@ export default function OrderPdfButton({ order, orderId, compact = false, downlo
 
   return (
     <span className="order-pdf-action">
-      <button className={`button button-secondary pdf-button${compact ? " pdf-button-compact" : ""}`} type="button" onClick={download} disabled={busy || downloaded || disabled} aria-label={`${disabled ? "Parcel PDF unavailable" : downloaded ? "Parcel PDF already opened" : "Open parcel PDF"} for ${order?.orderNumber || "order"}`} title={disabled ? "Parcel PDF is not needed for hand delivery" : downloaded ? "Parcel summary already opened" : "Open parcel PDF in a new tab"}>
+      <button className={`button button-secondary pdf-button${compact ? " pdf-button-compact" : ""}`} type="button" onClick={download} disabled={busy || downloaded || handDelivery} aria-label={`${handDelivery ? "Parcel PDF unavailable" : downloaded ? "Parcel PDF already opened" : "Open parcel PDF"} for ${order?.orderNumber || "order"}`} title={handDelivery ? "Parcel PDF is not needed for hand delivery" : downloaded ? "Parcel summary already opened" : "Open parcel PDF in a new tab"}>
         {busy ? <LoaderCircle className="spin" size={15} /> : downloaded ? <Check size={15} /> : <FileText size={15} />}
         {!compact && (busy ? "Preparing PDF…" : downloaded ? "Parcel summary opened" : "Open parcel PDF")}
       </button>
